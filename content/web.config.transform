@@ -1,0 +1,16 @@
+<configuration>
+	<appSettings>
+		<add key="UseCDNScripts" value="false" />
+		<add key="CompressScripts" value="false" />
+	</appSettings>
+	<system.web>
+		<httpHandlers>
+			<add verb="*" path="scripts.axd" type="RazorScriptManager.RazorScriptManager"/>
+		</httpHandlers>
+	</system.web>
+	<system.webServer>
+		<handlers>
+			<add name="ScriptManager" verb="*" path="scripts.axd" type="RazorScriptManager.RazorScriptManager"/>
+		</handlers>
+	</system.webServer>
+</configuration>

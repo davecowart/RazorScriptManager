@@ -5,6 +5,7 @@ using System.Text;
 using System.Web;
 using System.Web.SessionState;
 using System.Configuration;
+using System.IO;
 
 namespace RazorScriptManager {
 	public class RazorScriptManager : IHttpHandler, IReadOnlySessionState {
@@ -46,7 +47,10 @@ namespace RazorScriptManager {
 			foreach (var script in scripts.Select(s => s.LocalPath).Distinct()) {
 				if (!String.IsNullOrWhiteSpace(script)) {
 					using (var file = new System.IO.StreamReader(script)) {
-						scriptbody.Append(file.ReadToEnd());
+						var fromUri = new Uri(context.Server.MapPath("~/"));
+						var toUri = new Uri(new FileInfo(script).DirectoryName);
+						var relativeUri = fromUri.MakeRelativeUri(toUri);
+						scriptbody.Append(file.ReadToEnd().Replace("url(", "url(/" + relativeUri.ToString() + "/"));
 					}
 				}
 			}

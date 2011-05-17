@@ -47,10 +47,14 @@ namespace RazorScriptManager {
 			foreach (var script in scripts.Select(s => s.LocalPath).Distinct()) {
 				if (!String.IsNullOrWhiteSpace(script)) {
 					using (var file = new System.IO.StreamReader(script)) {
-						var fromUri = new Uri(context.Server.MapPath("~/"));
-						var toUri = new Uri(new FileInfo(script).DirectoryName);
-						var relativeUri = fromUri.MakeRelativeUri(toUri);
-						scriptbody.Append(file.ReadToEnd().Replace("url(", "url(/" + relativeUri.ToString() + "/"));
+						var fileContent = file.ReadToEnd();
+						if (scriptType == ScriptType.Stylesheet) {
+							var fromUri = new Uri(context.Server.MapPath("~/"));
+							var toUri = new Uri(new FileInfo(script).DirectoryName);
+							var relativeUri = fromUri.MakeRelativeUri(toUri);
+							fileContent = fileContent.Replace("url(", "url(/" + relativeUri.ToString() + "/")
+						}
+						scriptbody.Append(fileContent);
 					}
 				}
 			}

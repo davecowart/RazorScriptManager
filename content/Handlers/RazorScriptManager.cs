@@ -52,7 +52,7 @@ namespace RazorScriptManager {
 							var fromUri = new Uri(context.Server.MapPath("~/"));
 							var toUri = new Uri(new FileInfo(script).DirectoryName);
 							var relativeUri = fromUri.MakeRelativeUri(toUri);
-							fileContent = fileContent.Replace("url(", "url(/" + relativeUri.ToString() + "/")
+							fileContent = fileContent.Replace("url(", "url(/" + relativeUri.ToString() + "/");
 						}
 						scriptbody.Append(fileContent);
 					}

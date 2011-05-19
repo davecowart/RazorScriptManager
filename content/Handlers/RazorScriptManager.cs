@@ -79,10 +79,16 @@ namespace RazorScriptManager {
 		#endregion
 
 		public static string GetHash(List<ScriptInfo> scripts) {
-			var input = string.Join("", scripts.Select(s => s.LocalPath));
-			var bytes = Encoding.ASCII.GetBytes(input);
-			var hash = Convert.ToBase64String(bytes);
-			return hash;
+			var input = string.Join(string.Empty, scripts.Select(s => s.LocalPath).Distinct());
+
+			var md5 = System.Security.Cryptography.MD5.Create();
+			var hash = md5.ComputeHash(Encoding.ASCII.GetBytes(input));
+
+			var sb = new StringBuilder();
+			for (int i = 0; i < hash.Length; i++) {
+				sb.Append(hash[i].ToString("X2"));
+			}
+			return sb.ToString();
 		}
 	}
 

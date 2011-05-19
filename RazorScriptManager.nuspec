@@ -2,11 +2,11 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>RazorScriptManager</id>
-    <version>0.5.3</version>
+    <version>0.6</version>
     <authors>Dave Cowart</authors>
     <owners>Dave Cowart</owners>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>Razor ScriptManager, including combining, caching and minification</description>
+    <description>Simple Razor ScriptManager, including combining, caching and minification</description>
     <tags>Razor ScriptManager Script Compressor Minifier Minify</tags>
     <dependencies>
       <dependency id="YUICompressor.NET" version="1.5.0.0" />

@@ -7,7 +7,7 @@
 		Session[key] = new List<ScriptInfo>();
 	}
 	var scripts = Session[key] as List<ScriptInfo>;
-	scripts.Add(new ScriptInfo(Server.MapPath(localPath), cdnPath, scriptType));
+	scripts.Add(new ScriptInfo(Server.MapPath(localPath), cdnPath, scriptType, siteWide));
 	Session[key] = scripts;		
 }
 

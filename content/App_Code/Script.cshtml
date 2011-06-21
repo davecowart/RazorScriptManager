@@ -1,26 +1,50 @@
 ﻿@using RazorScriptManager
 
-@helper AddScript(string path, ScriptType scriptType) {
-	var key = "__rsm__" + scriptType.ToString();
-	if (Session[key] == null) {
-		Session[key] = new List<ScriptInfo>();
-	}
-	var scripts = Session[key] as List<ScriptInfo>;
-	scripts.Add(new ScriptInfo(Server.MapPath(path), null, scriptType));
-	Session[key] = scripts;	
-}
-
-@helper AddScript(string localPath, string cdnPath, ScriptType scriptType) {
+@helper AddCss(string localPath, string cdnPath = null, bool siteWide = false) {
+	var scriptType = ScriptType.Stylesheet;
 	var key = "__rsm__" + scriptType.ToString();
 	if (Session[key] == null) {
 		Session[key] = new List<ScriptInfo>();
 	}
 	var scripts = Session[key] as List<ScriptInfo>;
 	scripts.Add(new ScriptInfo(Server.MapPath(localPath), cdnPath, scriptType));
-	Session[key] = scripts;	
+	Session[key] = scripts;		
 }
 
-@helper OutputScript(ScriptType scriptType) {
+@helper AddJavaScript(string localPath, string cdnPath = null, bool siteWide = false) {
+	var scriptType = ScriptType.JavaScript;
+	var key = "__rsm__" + scriptType.ToString();
+	if (Session[key] == null) {
+		Session[key] = new List<ScriptInfo>();
+	}
+	var scripts = Session[key] as List<ScriptInfo>;
+	scripts.Add(new ScriptInfo(Server.MapPath(localPath), cdnPath, scriptType, siteWide));
+	Session[key] = scripts;		
+}
+
+@helper OutputCss() {
+	var scriptType = ScriptType.Stylesheet;
+	var key = "__rsm__" + scriptType.ToString();
+	if (Session[key] == null) { return; }
+	IEnumerable<ScriptInfo> scripts = Session[key] as List<ScriptInfo>;
+	if (bool.Parse(System.Configuration.ConfigurationManager.AppSettings["UseCDNScripts"])) {
+		var localScripts = scripts.Where(s => string.IsNullOrWhiteSpace(s.CDNPath));
+		var cdnScripts = scripts.Except(localScripts);
+		scripts = localScripts;
+		Session[key] = scripts;
+
+		foreach (var cdnScript in cdnScripts) {
+		<link href="@cdnScript" rel="stylesheet" type="text/css" />
+		}
+	}
+
+
+	var hash = HttpUtility.UrlEncode(RazorScriptManager.GetHash(scripts));
+	<link href="/scripts.axd?type=@scriptType.ToString()&hash=@hash" rel="stylesheet" type="text/css" />
+}
+
+@helper OutputJavaScript() {
+	var scriptType = ScriptType.JavaScript;
 	var key = "__rsm__" + scriptType.ToString();
 	if (Session[key] == null) { return; }
 	var scripts = Session[key] as List<ScriptInfo>;
@@ -33,23 +57,9 @@
 	}
 
 	foreach (var cdnScript in cdnScripts) {
-		switch (scriptType) {
-			case ScriptType.JavaScript:
 				<script type="text/javascript" src="@cdnScript.CDNPath"></script>
-				break;
-			case ScriptType.Stylesheet:
-				<link href="@cdnScript" rel="stylesheet" type="text/css" />
-				break;
-		}
 	}
 
 	var hash = HttpUtility.UrlEncode(RazorScriptManager.GetHash(scripts));
-	switch (scriptType) {
-		case ScriptType.JavaScript:
-			<script type="text/javascript" src="/scripts.axd?type=@scriptType.ToString()&hash=@hash"></script>
-			break;
-		case ScriptType.Stylesheet:
-			<link href="/scripts.axd?type=@scriptType.ToString()&hash=@hash" rel="stylesheet" type="text/css" />
-			break;
-	}
+	<script type="text/javascript" src="/scripts.axd?type=@scriptType.ToString()&hash=@hash"></script>
 }

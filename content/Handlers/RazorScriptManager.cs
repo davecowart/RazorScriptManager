@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Web;
 using System.Web.SessionState;
-using System.Configuration;
 
 namespace RazorScriptManager {
 	public class RazorScriptManager : IHttpHandler, IReadOnlySessionState {
@@ -37,23 +38,38 @@ namespace RazorScriptManager {
 				}
 			}
 
-
 			//not cached
-			var scripts = context.Session["__rsm__" + scriptType.ToString()] as List<ScriptInfo>;
+			var scripts = context.Session["__rsm__" + scriptType.ToString()] as IEnumerable<ScriptInfo>;
 			context.Session["__rsm__" + scriptType.ToString()] = null;
 			if (scripts == null) return;
 			var scriptbody = new StringBuilder();
-			foreach (var script in scripts.Select(s => s.LocalPath).Distinct()) {
+
+			scripts = scripts.Distinct(new ScriptInfoComparer());
+
+			//add sitewide scripts FIRST, so they're accessible to local scripts
+			var siteScripts = scripts.Where(s => s.SiteWide);
+			var localScripts = scripts.Where(s => !s.SiteWide).Except(siteScripts, new ScriptInfoComparer());
+			var scriptPaths = siteScripts.Concat(localScripts).Select(s => s.LocalPath);
+			var minify = bool.Parse(ConfigurationManager.AppSettings["CompressScripts"]);
+
+			foreach (var script in scriptPaths) {
 				if (!String.IsNullOrWhiteSpace(script)) {
 					using (var file = new System.IO.StreamReader(script)) {
-						scriptbody.Append(file.ReadToEnd());
+						var fileContent = file.ReadToEnd();
+						if (scriptType == ScriptType.Stylesheet) {
+							var fromUri = new Uri(context.Server.MapPath("~/"));
+							var toUri = new Uri(new FileInfo(script).DirectoryName);
+							fileContent = fileContent.Replace("url(", "url(/" + fromUri.MakeRelativeUri(toUri).ToString() + "/");
+						}
+						if (!minify) scriptbody.AppendLine(String.Format("/* {0} */", script));
+						scriptbody.AppendLine(fileContent);
 					}
 				}
 			}
 
 			var hash = GetHash(scripts);
 			string scriptOutput = scriptbody.ToString();
-			if (bool.Parse(ConfigurationManager.AppSettings["CompressScripts"])) {
+			if (minify) {
 				switch (scriptType) {
 					case ScriptType.JavaScript:
 						var jscompressor = new Yahoo.Yui.Compressor.JavaScriptCompressor(scriptOutput);
@@ -70,11 +86,13 @@ namespace RazorScriptManager {
 
 		#endregion
 
-		public static string GetHash(List<ScriptInfo> scripts) {
-			var input = string.Join("", scripts.Select(s => s.LocalPath));
-			var bytes = Encoding.ASCII.GetBytes(input);
-			var hash = Convert.ToBase64String(bytes);
-			return hash;
+		public static string GetHash(IEnumerable<ScriptInfo> scripts) {
+			var input = string.Join(string.Empty, scripts.Select(s => s.LocalPath).Distinct());
+			var hash = System.Security.Cryptography.MD5.Create().ComputeHash(Encoding.ASCII.GetBytes(input));
+			var sb = new StringBuilder();
+			for (int i = 0; i < hash.Length; i++)
+				sb.Append(hash[i].ToString("X2"));
+			return sb.ToString();
 		}
 	}
 
@@ -87,12 +105,26 @@ namespace RazorScriptManager {
 		public string LocalPath { get; set; }
 		public string CDNPath { get; set; }
 		public ScriptType ScriptType { get; set; }
+		public bool SiteWide { get; set; }
 
-		public ScriptInfo(string localPath, string cdnPath, ScriptType scriptType) {
+		public ScriptInfo(string localPath, string cdnPath, ScriptType scriptType, bool siteWide = false) {
 			LocalPath = localPath;
 			CDNPath = cdnPath;
 			ScriptType = scriptType;
+			SiteWide = siteWide;
 		}
+	}
+
+	public class ScriptInfoComparer : IEqualityComparer<ScriptInfo> {
+
+		public bool Equals(ScriptInfo x, ScriptInfo y) {
+			return x.GetHashCode() == y.GetHashCode();
+		}
+
+		public int GetHashCode(ScriptInfo obj) {
+			return (obj.LocalPath + obj.CDNPath + obj.ScriptType.ToString()).GetHashCode();
+		}
+
 	}
 
 }

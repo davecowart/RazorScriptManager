@@ -33,6 +33,7 @@ namespace RazorScriptManager {
 			if (!String.IsNullOrWhiteSpace(hashString)) {
 				var result = cache[HttpUtility.UrlDecode(hashString)] as string;
 				if (!string.IsNullOrWhiteSpace(result)) {
+					context.Session["__rsm__" + scriptType.ToString()] = null;
 					context.Response.Write(result);
 					return;
 				}

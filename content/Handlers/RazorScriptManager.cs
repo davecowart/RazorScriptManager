@@ -5,10 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Web;
-using System.Web.SessionState;
 
 namespace RazorScriptManager {
-	public class RazorScriptManager : IHttpHandler, IReadOnlySessionState {
+	public class RazorScriptManager : IHttpHandler {
 		#region IHttpHandler Members
 
 		public bool IsReusable {
@@ -33,15 +32,15 @@ namespace RazorScriptManager {
 			if (!String.IsNullOrWhiteSpace(hashString)) {
 				var result = cache[HttpUtility.UrlDecode(hashString)] as string;
 				if (!string.IsNullOrWhiteSpace(result)) {
-					context.Session["__rsm__" + scriptType.ToString()] = null;
+					context.Application["__rsm__" + scriptType.ToString()] = null;
 					context.Response.Write(result);
 					return;
 				}
 			}
 
 			//not cached
-			var scripts = context.Session["__rsm__" + scriptType.ToString()] as IEnumerable<ScriptInfo>;
-			context.Session["__rsm__" + scriptType.ToString()] = null;
+			var scripts = context.Application["__rsm__" + scriptType.ToString()] as IEnumerable<ScriptInfo>;
+			context.Application["__rsm__" + scriptType.ToString()] = null;
 			if (scripts == null) return;
 			var scriptbody = new StringBuilder();
 

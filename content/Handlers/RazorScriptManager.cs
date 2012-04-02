@@ -14,6 +14,13 @@ namespace RazorScriptManager {
 			get { return false; }
 		}
 
+		public void SetCacheability(HttpContext context)
+		{
+			context.Response.Cache.SetCacheability(HttpCacheability.Public);
+			context.Response.Cache.SetExpires(DateTime.UtcNow.AddYears(1));
+			context.Response.Cache.SetValidUntilExpires(true);
+		}
+
 		public void ProcessRequest(HttpContext context) {
 			var cache = context.Cache;
 			var scriptType = (ScriptType)Enum.Parse(typeof(ScriptType), context.Request.Params["type"]);

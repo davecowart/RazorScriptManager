@@ -27,6 +27,8 @@ namespace RazorScriptManager {
 					break;
 			}
 
+			SetCacheability(context);
+
 			//cached
 			var hashString = context.Request.Params["hash"];
 			if (!String.IsNullOrWhiteSpace(hashString)) {
@@ -87,7 +89,12 @@ namespace RazorScriptManager {
 		#endregion
 
 		public static string GetHash(IEnumerable<ScriptInfo> scripts) {
-			var input = string.Join(string.Empty, scripts.Select(s => s.LocalPath).Distinct());
+			var paths = scripts.Select(s => s.LocalPath).Distinct();
+			string latestModification = paths.Count() == 0
+				? ""
+				: paths.Select(p => new FileInfo(p)).Max(f => f.LastWriteTimeUtc).Ticks.ToString();
+
+			var input = string.Join(string.Empty, paths) + latestModification;
 			var hash = System.Security.Cryptography.MD5.Create().ComputeHash(Encoding.ASCII.GetBytes(input));
 			var sb = new StringBuilder();
 			for (int i = 0; i < hash.Length; i++)

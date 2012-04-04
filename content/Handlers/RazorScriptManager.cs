@@ -132,8 +132,10 @@ namespace RazorScriptManager {
 	public class ScriptInfoComparer : IEqualityComparer<ScriptInfo> {
 
 		public bool Equals(ScriptInfo x, ScriptInfo y) {
-			return x.GetHashCode() == y.GetHashCode();
-		}
+			return x.CDNPath == y.CDNPath
+				&& x.LocalPath == y.LocalPath
+				&& x.ScriptType == y.ScriptType;
+                }
 
 		public int GetHashCode(ScriptInfo obj) {
 			return (obj.LocalPath + obj.CDNPath + obj.ScriptType.ToString()).GetHashCode();

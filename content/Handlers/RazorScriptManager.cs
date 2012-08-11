@@ -14,6 +14,13 @@ namespace RazorScriptManager {
 			get { return false; }
 		}
 
+		public void SetCacheability(HttpContext context)
+		{
+			context.Response.Cache.SetCacheability(HttpCacheability.Public);
+			context.Response.Cache.SetExpires(DateTime.UtcNow.AddYears(1));
+			context.Response.Cache.SetValidUntilExpires(true);
+		}
+
 		public void ProcessRequest(HttpContext context) {
 			var cache = context.Cache;
 			var scriptType = (ScriptType)Enum.Parse(typeof(ScriptType), context.Request.Params["type"]);
@@ -26,6 +33,8 @@ namespace RazorScriptManager {
 					context.Response.ContentType = @"text/css";
 					break;
 			}
+
+			SetCacheability(context);
 
 			//cached
 			var hashString = context.Request.Params["hash"];
@@ -87,7 +96,12 @@ namespace RazorScriptManager {
 		#endregion
 
 		public static string GetHash(IEnumerable<ScriptInfo> scripts) {
-			var input = string.Join(string.Empty, scripts.Select(s => s.LocalPath).Distinct());
+			var paths = scripts.Select(s => s.LocalPath).Distinct();
+			string latestModification = paths.Count() == 0
+				? ""
+				: paths.Select(p => new FileInfo(p)).Max(f => f.LastWriteTimeUtc).Ticks.ToString();
+
+			var input = string.Join(string.Empty, paths) + latestModification;
 			var hash = System.Security.Cryptography.MD5.Create().ComputeHash(Encoding.ASCII.GetBytes(input));
 			var sb = new StringBuilder();
 			for (int i = 0; i < hash.Length; i++)
@@ -118,8 +132,10 @@ namespace RazorScriptManager {
 	public class ScriptInfoComparer : IEqualityComparer<ScriptInfo> {
 
 		public bool Equals(ScriptInfo x, ScriptInfo y) {
-			return x.GetHashCode() == y.GetHashCode();
-		}
+			return x.CDNPath == y.CDNPath
+				&& x.LocalPath == y.LocalPath
+				&& x.ScriptType == y.ScriptType;
+                }
 
 		public int GetHashCode(ScriptInfo obj) {
 			return (obj.LocalPath + obj.CDNPath + obj.ScriptType.ToString()).GetHashCode();
